@@ -1,5 +1,8 @@
 # Circus Catch
 
+<img width="1672" height="941" alt="c56769cdf1d6be368c07f141b0fab7544a651d1260351cc46c3795b868052a45" src="https://github.com/user-attachments/assets/b16c422a-04d3-41ac-b9e6-86006bedbd20" />
+
+
 ## Концепция
 
 Аркадная казуальная игра, в которой клоун собирает предметы, брошенные зрителями на бортик циркового манежа.
