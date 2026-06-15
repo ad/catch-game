@@ -1,7 +1,6 @@
 # Circus Catch
 
-<img width="1672" height="941" alt="c56769cdf1d6be368c07f141b0fab7544a651d1260351cc46c3795b868052a45" src="https://github.com/user-attachments/assets/b16c422a-04d3-41ac-b9e6-86006bedbd20" />
-
+<img width="600" height="337" src="https://github.com/user-attachments/assets/2a1dea0a-f804-4ef5-b42a-a431c80864b3" />
 
 ## Концепция
 
