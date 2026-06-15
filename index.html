@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Circus Catch</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <canvas id="game"></canvas>
+
+  <!-- HUD -->
+  <div id="hud" class="hidden">
+    <div class="hud-top">
+      <div class="hud-panel">
+        <span class="hud-label">Очки</span>
+        <span id="hud-score">0</span>
+      </div>
+      <div id="hud-lives" class="hud-lives"></div>
+      <div class="hud-panel">
+        <span class="hud-label">Собрано</span>
+        <span id="hud-collected">0 / 50</span>
+      </div>
+    </div>
+    <div class="hud-bottom">
+      <button id="btn-sound" class="icon-btn"><img src="img/sound-on.png" alt="Звук"></button>
+      <div id="hud-bonuses" class="hud-bonuses"></div>
+      <button id="btn-pause" class="icon-btn"><img src="img/pause.png" alt="Пауза"></button>
+    </div>
+  </div>
+
+  <!-- Пауза -->
+  <div id="pause-overlay" class="overlay hidden">
+    <div class="dialog dialog-wide">
+      <h2>Пауза</h2>
+      <div id="legend" class="legend"></div>
+      <button id="btn-resume" class="btn">Продолжить</button>
+      <button id="btn-pause-menu" class="btn btn-secondary">Главное меню</button>
+    </div>
+  </div>
+
+  <!-- Загрузка -->
+  <div id="screen-loading" class="overlay">
+    <div class="dialog"><h2>Загрузка…</h2></div>
+  </div>
+
+  <!-- Меню -->
+  <div id="screen-menu" class="overlay hidden">
+    <div class="dialog">
+      <h1>Circus Catch</h1>
+      <p>Клоун ловит предметы на бортике манежа. Нажимай на полезные, избегай вредных.</p>
+      <button id="btn-start" class="btn">Играть</button>
+    </div>
+  </div>
+
+  <!-- Конец игры -->
+  <div id="screen-over" class="overlay hidden">
+    <div class="dialog">
+      <h2>Игра окончена</h2>
+      <div class="stats">
+        <div><span>Счёт</span><b id="over-score">0</b></div>
+        <div><span>Собрано</span><b id="over-collected">0 / 50</b></div>
+        <div><span>Время</span><b id="over-time">00:00</b></div>
+      </div>
+      <button id="btn-retry" class="btn">Повторить</button>
+      <button id="btn-menu" class="btn btn-secondary">Главное меню</button>
+    </div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/assets.js"></script>
+  <script src="js/geometry.js"></script>
+  <script src="js/items.js"></script>
+  <script src="js/game.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

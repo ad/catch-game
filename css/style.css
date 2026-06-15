@@ -1,0 +1,134 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  width: 100%; height: 100%;
+  overflow: hidden;
+  background: #1a0f1f;
+  font-family: 'Trebuchet MS', 'Segoe UI', system-ui, sans-serif;
+  color: #fff;
+  -webkit-user-select: none; user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#game { display: block; position: fixed; inset: 0; }
+
+.hidden { display: none !important; }
+
+/* ---- HUD ---- */
+#hud {
+  position: fixed; inset: 0;
+  pointer-events: none;
+  display: flex; flex-direction: column; justify-content: space-between;
+  padding: env(safe-area-inset-top, 8px) 10px env(safe-area-inset-bottom, 8px);
+}
+.hud-top, .hud-bottom {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 8px; padding: 8px;
+}
+.hud-bottom { gap: 12px; }
+
+.hud-panel {
+  pointer-events: none;
+  display: flex; flex-direction: column; align-items: center;
+  min-width: 96px; padding: 6px 14px;
+  background: rgba(40, 12, 20, 0.72);
+  border: 2px solid #f2a83c;
+  border-radius: 14px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+}
+.hud-label { font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: #f2c97a; }
+.hud-panel span:last-child { font-size: 20px; font-weight: bold; text-shadow: 0 1px 2px #000; }
+
+.hud-lives { display: flex; gap: 3px; }
+.hud-lives img { width: 30px; height: 30px; }
+.hud-lives img.dim { opacity: 0.25; filter: grayscale(1); }
+
+.hud-bonuses { display: flex; gap: 10px; flex: 1; justify-content: center; }
+.bonus {
+  position: relative; width: 48px; height: 48px;
+  background: rgba(0,0,0,0.4); border-radius: 50%; border: 2px solid #6cc6ff;
+  display: flex; align-items: center; justify-content: center;
+}
+.bonus img { width: 34px; height: 34px; }
+.bonus span {
+  position: absolute; bottom: -4px; right: -4px;
+  background: #222; border-radius: 8px; padding: 1px 5px;
+  font-size: 12px; font-weight: bold; border: 1px solid #6cc6ff;
+}
+
+.icon-btn {
+  pointer-events: auto;
+  width: 54px; height: 54px;
+  border: none; border-radius: 50%;
+  background: rgba(40, 12, 20, 0.72);
+  border: 2px solid #f2a83c;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+}
+.icon-btn img { width: 32px; height: 32px; }
+.icon-btn:active { transform: scale(0.94); }
+
+/* ---- Оверлеи ---- */
+.overlay {
+  position: fixed; inset: 0; z-index: 10;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(10, 5, 12, 0.78);
+}
+.dialog {
+  background: linear-gradient(160deg, #3a1322, #25101c);
+  border: 3px solid #f2a83c;
+  border-radius: 22px;
+  padding: 32px 28px;
+  text-align: center;
+  max-width: 88vw; width: 360px;
+  max-height: 92vh; overflow-y: auto;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+}
+.dialog h1 { font-size: 34px; margin-bottom: 12px; color: #f2c97a; text-shadow: 0 2px 0 #7a2; }
+.dialog h2 { font-size: 26px; margin-bottom: 18px; color: #f2c97a; }
+.dialog p { font-size: 15px; line-height: 1.4; opacity: 0.9; margin-bottom: 22px; }
+
+.btn {
+  display: block; width: 100%;
+  margin: 10px 0; padding: 14px;
+  font-size: 18px; font-weight: bold;
+  color: #2a0f12; cursor: pointer;
+  background: linear-gradient(#ffd564, #f2a83c);
+  border: none; border-radius: 14px;
+  box-shadow: 0 4px 0 #b9742a;
+}
+.btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #b9742a; }
+.btn-secondary {
+  background: linear-gradient(#6a3a52, #4a2438);
+  color: #fff; box-shadow: 0 4px 0 #2a1320;
+}
+
+.dialog-wide { width: 640px; max-width: 94vw; }
+
+.legend {
+  display: flex; gap: 18px;
+  margin-bottom: 20px; text-align: left;
+}
+.legend-col { flex: 1; min-width: 0; }
+.legend-col h3 {
+  font-size: 14px; text-transform: uppercase; letter-spacing: 1px;
+  color: #f2c97a; margin-bottom: 8px; text-align: center;
+}
+.legend-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 3px 0;
+}
+.legend-row img { width: 30px; height: 30px; flex: 0 0 30px; object-fit: contain; }
+.legend-row span { font-size: 12.5px; line-height: 1.2; opacity: 0.92; }
+
+@media (max-width: 560px) {
+  .legend { flex-direction: column; gap: 10px; }
+  .legend-row span { font-size: 13px; }
+}
+
+.stats { margin-bottom: 20px; }
+.stats div {
+  display: flex; justify-content: space-between;
+  padding: 8px 4px; border-bottom: 1px solid rgba(242,168,60,0.3);
+  font-size: 17px;
+}
+.stats b { color: #ffd564; }
