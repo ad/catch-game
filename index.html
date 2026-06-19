@@ -22,6 +22,7 @@
         <span id="hud-collected">0 / 50</span>
       </div>
     </div>
+    <div id="hud-round" class="hud-round">Раунд 1</div>
     <div class="hud-bottom">
       <button id="btn-sound" class="icon-btn"><img src="img/sound-on.png" alt="Звук"></button>
       <div id="hud-bonuses" class="hud-bonuses"></div>
@@ -53,22 +54,38 @@
     </div>
   </div>
 
+  <!-- Раунд пройден -->
+  <div id="screen-round" class="overlay hidden">
+    <div class="dialog">
+      <h2>Раунд пройден!</h2>
+      <div class="stats">
+        <div><span>Раунд</span><b id="round-num">1</b></div>
+        <div><span>Счёт</span><b id="round-score">0</b></div>
+      </div>
+      <button id="btn-next" class="btn">Следующий раунд</button>
+      <button id="btn-round-menu" class="btn btn-secondary">Главное меню</button>
+    </div>
+  </div>
+
   <!-- Конец игры -->
   <div id="screen-over" class="overlay hidden">
     <div class="dialog">
       <h2>Игра окончена</h2>
       <div class="stats">
+        <div><span>Раунд</span><b id="over-round">1</b></div>
         <div><span>Счёт</span><b id="over-score">0</b></div>
         <div><span>Собрано</span><b id="over-collected">0 / 50</b></div>
         <div><span>Время</span><b id="over-time">00:00</b></div>
       </div>
-      <button id="btn-retry" class="btn">Повторить</button>
+      <button id="btn-restart-round" class="btn">Начать раунд заново</button>
+      <button id="btn-retry" class="btn btn-secondary">Новая игра</button>
       <button id="btn-menu" class="btn btn-secondary">Главное меню</button>
     </div>
   </div>
 
   <script src="js/config.js"></script>
   <script src="js/assets.js"></script>
+  <script src="js/sound.js"></script>
   <script src="js/geometry.js"></script>
   <script src="js/items.js"></script>
   <script src="js/game.js"></script>

@@ -8,7 +8,9 @@
     loading: $('screen-loading'),
     menu: $('screen-menu'),
     over: $('screen-over'),
+    round: $('screen-round'),
   };
+  const elRound = $('hud-round');
   const hud = $('hud');
   const elScore = $('hud-score');
   const elCollected = $('hud-collected');
@@ -71,21 +73,27 @@
     return `<div class="bonus"><img src="img/${key}.png" alt="${label}"><span>${sec}</span></div>`;
   }
 
+  // Кэш значений: DOM обновляется только при изменении (меньше нагрев устройства).
+  let cScore = null, cColl = null, cLives = null, cBonus = null, cRound = null;
+
   Game.onUpdate = function (s) {
-    elScore.textContent = fmt(s.score);
-    elCollected.textContent = `${s.collected} / ${CONFIG.goal}`;
-    // жизни
-    let hearts = '';
-    for (let i = 0; i < CONFIG.maxLives; i++) {
-      hearts += `<img class="${i < s.lives ? '' : 'dim'}" src="img/lives.png" alt="">`;
+    if (s.score !== cScore) { elScore.textContent = fmt(s.score); cScore = s.score; }
+    if (s.collected !== cColl) { elCollected.textContent = `${s.collected} / ${CONFIG.goal}`; cColl = s.collected; }
+    if (s.round !== cRound) { elRound.textContent = `Раунд ${s.round}`; cRound = s.round; }
+    if (s.lives !== cLives) {
+      let hearts = '';
+      for (let i = 0; i < CONFIG.maxLives; i++) {
+        hearts += `<img class="${i < s.lives ? '' : 'dim'}" src="img/lives.png" alt="">`;
+      }
+      elLives.innerHTML = hearts;
+      cLives = s.lives;
     }
-    elLives.innerHTML = hearts;
-    // бонусы с таймером
+    // бонусы с таймером (обновляем строку только при изменении)
     let chips = '';
     if (s.bonuses.magnet > s.now) chips += bonusChip('magnet', 'Магнит', s.bonuses.magnet - s.now);
     if (s.shieldActive && s.bonuses.shield > s.now) chips += bonusChip('shield', 'Щит', s.bonuses.shield - s.now);
     if (s.bonuses.x2 > s.now) chips += bonusChip('x2', 'x2', s.bonuses.x2 - s.now);
-    elBonuses.innerHTML = chips;
+    if (chips !== cBonus) { elBonuses.innerHTML = chips; cBonus = chips; }
   };
 
   // ---- Легенда предметов (окно паузы) ----
@@ -128,7 +136,8 @@
     btnSound.querySelector('img').src = Game.soundOn ? 'img/sound-on.png' : 'img/sound-off.png';
   }
   btnSound.addEventListener('click', () => {
-    Game.soundOn = !Game.soundOn; // заглушка: только состояние
+    Game.soundOn = !Game.soundOn;
+    if (Game.soundOn) { Sound.init(); Sound.resume(); Sound.play('click'); }
     updateSoundIcon();
   });
 
@@ -148,23 +157,37 @@
     showScreen('menu');
   });
 
-  function startGame() {
+  function enterGame() {
     paused = false;
     pauseOverlay.classList.add('hidden');
+    Sound.init();
+    Sound.resume();
     resize();
     showScreen(null);
-    Game.start();
   }
 
-  $('btn-start').addEventListener('click', startGame);
+  function startGame() { enterGame(); Game.start(); }
+
+  $('btn-start').addEventListener('click', () => { Sound.init(); Sound.play('click'); startGame(); });
   $('btn-retry').addEventListener('click', startGame);
+  $('btn-restart-round').addEventListener('click', () => { enterGame(); Game.restartRound(); });
+  $('btn-next').addEventListener('click', () => { enterGame(); Game.nextRound(); });
+  $('btn-round-menu').addEventListener('click', () => { Game.stop(); showScreen('menu'); });
   $('btn-menu').addEventListener('click', () => showScreen('menu'));
+
+  // ---- Раунд пройден ----
+  Game.onRoundComplete = function (r) {
+    $('round-num').textContent = r.round;
+    $('round-score').textContent = fmt(r.score);
+    showScreen('round');
+  };
 
   // ---- Game Over ----
   Game.onGameOver = function (r) {
     const totalSec = Math.floor(r.elapsedMs / 1000);
     const mm = String(Math.floor(totalSec / 60)).padStart(2, '0');
     const ss = String(totalSec % 60).padStart(2, '0');
+    $('over-round').textContent = r.round;
     $('over-score').textContent = fmt(r.score);
     $('over-collected').textContent = `${r.collected} / ${r.goal}`;
     $('over-time').textContent = `${mm}:${ss}`;

@@ -20,6 +20,10 @@ const CONFIG = {
   spawnSpeedupPerStep: 0.10, // -10% к интервалу
   lifetimeReductionPerStep: 0.05, // -5% времени жизни
   badIncreasePerStep: 0.02, // +2% к плохим
+  roundDifficultyBonus: 2, // шагов сложности за каждый пройденный раунд
+
+  spawnAnimMs: 380, // приз летит от зрителей к бортику
+  spawnFromFactor: 1.7, // источник броска за бортиком (доля радиуса арены)
 
   clownSpeedFactor: 2.8, // скорость клоуна = factor * (меньшая полуось арены) в секунду
   magnetRadiusFactor: 0.18, // доля от меньшей полуоси арены

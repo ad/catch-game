@@ -39,6 +39,19 @@ html, body {
 .hud-label { font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: #f2c97a; }
 .hud-panel span:last-child { font-size: 20px; font-weight: bold; text-shadow: 0 1px 2px #000; }
 
+.hud-round {
+  position: absolute;
+  top: 76px; left: 50%;
+  transform: translateX(-50%);
+  pointer-events: none;
+  padding: 4px 16px;
+  background: rgba(40, 12, 20, 0.6);
+  border: 2px solid #f2a83c;
+  border-radius: 12px;
+  font-size: 15px; font-weight: bold; color: #f2c97a;
+  text-shadow: 0 1px 2px #000;
+}
+
 .hud-lives { display: flex; gap: 3px; }
 .hud-lives img { width: 30px; height: 30px; }
 .hud-lives img.dim { opacity: 0.25; filter: grayscale(1); }

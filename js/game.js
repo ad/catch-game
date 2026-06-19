@@ -8,6 +8,7 @@ const Game = {
   soundOn: true,
   debug: false, // показать эллипсы и точки спавна (клавиша D)
   onGameOver: null, // колбэк из main
+  onRoundComplete: null, // колбэк из main
   bgKey: 'bgHorizontal',
 
   state: null,
@@ -20,6 +21,8 @@ function freshState() {
     lives: CONFIG.startLives,
     score: 0,
     collected: 0,
+    round: 1,
+    scoreAtRoundStart: 0,
     now: 0,            // игровое время, мс
     elapsedMs: 0,
     spawnTimer: 0,
@@ -39,6 +42,30 @@ Game.init = function (canvas) {
 
 Game.start = function () {
   this.state = freshState();
+  this._begin();
+};
+
+// Следующий раунд: счёт сохраняется, сбор обнуляется, сложность растёт.
+Game.nextRound = function () {
+  const prev = this.state;
+  this.state = freshState();
+  this.state.round = prev.round + 1;
+  this.state.score = prev.score;
+  this.state.scoreAtRoundStart = prev.score;
+  this._begin();
+};
+
+// Заново текущий раунд: очки сбрасываются до начала раунда.
+Game.restartRound = function () {
+  const prev = this.state;
+  this.state = freshState();
+  this.state.round = prev.round;
+  this.state.score = prev.scoreAtRoundStart;
+  this.state.scoreAtRoundStart = prev.scoreAtRoundStart;
+  this._begin();
+};
+
+Game._begin = function () {
   this.state.clown.x = Arena.cx;
   this.state.clown.y = Arena.cy;
   this.running = true;
@@ -75,26 +102,43 @@ Game.loop = function (ts) {
 };
 
 // ---- Сложность ----
-function difficultySteps(collected) {
-  return Math.floor(collected / CONFIG.difficultyStep);
+function difficultySteps(s) {
+  return Math.floor(s.collected / CONFIG.difficultyStep) + (s.round - 1) * CONFIG.roundDifficultyBonus;
 }
 function currentSpawnInterval(s) {
-  const k = difficultySteps(s.collected);
+  const k = difficultySteps(s);
   let interval = CONFIG.spawnIntervalMs / (1 + CONFIG.spawnSpeedupPerStep * k);
   if (s.effects.cracker > s.now) interval *= 0.85; // быстрее появление при хлопушке
   return interval;
 }
 function currentLifetime(s) {
-  const k = difficultySteps(s.collected);
+  const k = difficultySteps(s);
   let life = CONFIG.baseLifetimeMs * Math.pow(1 - CONFIG.lifetimeReductionPerStep, k);
   if (s.effects.cracker > s.now) life *= 0.5; // +50% к скорости исчезновения
   return life;
 }
 function currentBadProbability(s) {
-  const k = difficultySteps(s.collected);
+  const k = difficultySteps(s);
   let p = 0.25 + CONFIG.badIncreasePerStep * k;
   if (s.effects.cracker > s.now) p += 0.15;
   return Math.min(CONFIG.badProbabilityMax + 0.15, Math.min(p, 0.55));
+}
+
+// Позиция приза с учётом броска от зрителей (из-за бортика внутрь). {x, y, p, scale}.
+function itemRenderPos(it, now) {
+  let p = (now - it.bornAt) / CONFIG.spawnAnimMs;
+  if (p < 0) p = 0; if (p > 1) p = 1;
+  const e = 1 - (1 - p) * (1 - p); // ease-out
+  // Источник броска — точка за бортиком (среди зрителей), радиально от центра.
+  const f = CONFIG.spawnFromFactor;
+  const ox = Arena.cx + (it.x - Arena.cx) * f;
+  const oy = Arena.cy + (it.y - Arena.cy) * f;
+  return {
+    x: ox + (it.x - ox) * e,
+    y: oy + (it.y - oy) * e,
+    p,
+    scale: 0.35 + 0.65 * e,
+  };
 }
 
 // ---- Скорость клоуна ----
@@ -118,7 +162,7 @@ Game.update = function (dt) {
   const interval = currentSpawnInterval(s);
   while (s.spawnTimer >= interval && s.items.length < CONFIG.maxItemsOnField) {
     s.spawnTimer -= interval;
-    const item = createItem(s.occupied, currentBadProbability(s), currentLifetime(s));
+    const item = createItem(s.occupied, currentBadProbability(s), currentLifetime(s), s.clown, this.itemDisplaySize() * 0.8);
     if (item) {
       item.bornAt = s.now;
       s.items.push(item);
@@ -143,7 +187,8 @@ Game.update = function (dt) {
     const r = CONFIG.magnetRadiusFactor * Math.min(Arena.innerRx, Arena.innerRy);
     for (let i = s.items.length - 1; i >= 0; i--) {
       const it = s.items[i];
-      const pk = pickupPointFor(it.x, it.y);
+      const rp = itemRenderPos(it, s.now);
+      const pk = pickupPointFor(rp.x, rp.y);
       const dx = s.clown.x - pk.x, dy = s.clown.y - pk.y;
       if (Math.hypot(dx, dy) <= r) this.collectItem(i);
     }
@@ -153,6 +198,10 @@ Game.update = function (dt) {
 
   if (s.lives <= 0) {
     this.endGame();
+    return;
+  }
+  if (s.collected >= CONFIG.goal) {
+    this.completeRound();
   }
 };
 
@@ -196,8 +245,8 @@ Game.pickItemAt = function (x, y) {
   const hitR = this.itemDisplaySize() * 0.6;
   let best = -1, bestD = Infinity;
   for (let i = 0; i < s.items.length; i++) {
-    const it = s.items[i];
-    const d = Math.hypot(it.x - x, it.y - y);
+    const rp = itemRenderPos(s.items[i], s.now);
+    const d = Math.hypot(rp.x - x, rp.y - y);
     if (d < hitR && d < bestD) { bestD = d; best = i; }
   }
   if (best < 0) return;
@@ -218,15 +267,16 @@ Game.collectItem = function (index) {
     if (s.shieldActive) {
       s.shieldActive = false;
       s.bonuses.shield = 0;
+      Sound.play('shield');
       return; // щит блокирует весь негатив
     }
-    this.applyPenalty(def);
+    this.applyPenalty(def, it.type);
   } else {
-    this.applyReward(def);
+    this.applyReward(def, it.type);
   }
 };
 
-Game.applyReward = function (def) {
+Game.applyReward = function (def, type) {
   const s = this.state;
   const mult = s.bonuses.x2 > s.now ? 2 : 1;
   if (def.points) s.score += def.points * mult;
@@ -234,7 +284,11 @@ Game.applyReward = function (def) {
   if (def.effect === 'candySpeed') {
     s.effects.candySpeed = s.now + CONFIG.durations.candySpeed;
   }
-  if (def.random) this.applyGift();
+  if (def.random) { this.applyGift(); return; }
+  if (type === 'coin') Sound.play('coin');
+  else if (type === 'candy') Sound.play('candy');
+  else if (type === 'cake' || type === 'bear') Sound.play('cake');
+  else Sound.play('good');
 };
 
 Game.applyGift = function () {
@@ -250,33 +304,77 @@ Game.applyGift = function () {
       s.score += 100 * m; break;
     }
   }
+  Sound.play('gift');
 };
 
-Game.applyPenalty = function (def) {
+Game.applyPenalty = function (def, type) {
   const s = this.state;
   if (def.points) s.score += def.points; // отрицательные
   if (s.score < 0) s.score = 0;
   if (def.life) s.lives += def.life;
   switch (def.effect) {
-    case 'stun': s.effects.stun = s.now + CONFIG.durations.stun; break;
-    case 'ketchupSlow': s.effects.ketchupSlow = s.now + CONFIG.durations.ketchupSlow; break;
-    case 'cactusSlow': s.effects.cactusSlow = s.now + CONFIG.durations.cactusSlow; break;
-    case 'cracker': s.effects.cracker = s.now + CONFIG.durations.cracker; break;
+    case 'stun': s.effects.stun = s.now + CONFIG.durations.stun; Sound.play('stun'); break;
+    case 'ketchupSlow': s.effects.ketchupSlow = s.now + CONFIG.durations.ketchupSlow; Sound.play('slow'); break;
+    case 'cactusSlow': s.effects.cactusSlow = s.now + CONFIG.durations.cactusSlow; Sound.play('slow'); break;
+    case 'cracker':
+      s.effects.cracker = s.now + CONFIG.durations.cracker;
+      this.shuffleItems();
+      Sound.play('cracker');
+      break;
     case 'clearBonuses':
       s.bonuses.magnet = 0; s.bonuses.x2 = 0; s.bonuses.shield = 0; s.shieldActive = false;
+      Sound.play('bomb');
       break;
+    default:
+      Sound.play(type === 'brick' ? 'brick' : 'bad');
   }
+};
+
+// Хлопушка: перемешать позиции видимых призов между их точками спавна.
+Game.shuffleItems = function () {
+  const s = this.state;
+  const items = s.items;
+  if (items.length < 2) return;
+  const slots = items.map((it) => ({ spawnIndex: it.spawnIndex, x: it.x, y: it.y }));
+  for (let i = slots.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const tmp = slots[i]; slots[i] = slots[j]; slots[j] = tmp;
+  }
+  items.forEach((it, i) => {
+    it.spawnIndex = slots[i].spawnIndex;
+    it.x = slots[i].x;
+    it.y = slots[i].y;
+    it.bornAt = s.now; // заново вылетают из центра
+  });
+  // Цель клоуна сбита перемешиванием.
+  s.clown.target = null;
+  s.clown.targetItemId = null;
 };
 
 Game.endGame = function () {
   if (!this.running) return;
   this.stop();
+  Sound.play('gameover');
   if (this.onGameOver) {
     this.onGameOver({
       score: this.state.score,
       collected: this.state.collected,
       goal: CONFIG.goal,
+      round: this.state.round,
       elapsedMs: this.state.elapsedMs,
+    });
+  }
+};
+
+Game.completeRound = function () {
+  if (!this.running) return;
+  this.stop();
+  Sound.play('roundwin');
+  if (this.onRoundComplete) {
+    this.onRoundComplete({
+      score: this.state.score,
+      round: this.state.round,
+      goal: CONFIG.goal,
     });
   }
 };
@@ -303,7 +401,7 @@ Game.render = function () {
   const s = this.state;
   const size = this.itemDisplaySize();
 
-  // Предметы (мигают перед исчезновением)
+  // Предметы (вылетают из центра, мигают перед исчезновением)
   for (const it of s.items) {
     const img = Assets.images[it.def.sprite];
     const remaining = it.lifeMs - it.age;
@@ -311,8 +409,10 @@ Game.render = function () {
     if (remaining < 1200) {
       alpha = 0.4 + 0.6 * Math.abs(Math.sin(s.now / 120));
     }
+    const rp = itemRenderPos(it, s.now);
+    const sz = size * rp.scale;
     ctx.globalAlpha = alpha;
-    if (img) ctx.drawImage(img, it.x - size / 2, it.y - size / 2, size, size);
+    if (img) ctx.drawImage(img, rp.x - sz / 2, rp.y - sz / 2, sz, sz);
     ctx.globalAlpha = 1;
   }
 

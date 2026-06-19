@@ -17,14 +17,25 @@ function pickItemType(badProbability) {
 }
 
 // Создать предмет на свободной точке спавна. Возвращает объект или null.
-function createItem(occupiedSpawnIndices, badProbability, lifetimeMs) {
+// clown/avoidDist: не спавнить под клоуном (точка, где он только что собрал приз).
+function createItem(occupiedSpawnIndices, badProbability, lifetimeMs, clown, avoidDist) {
   const free = [];
   for (let i = 0; i < Arena.spawnPoints.length; i++) {
     if (!occupiedSpawnIndices.has(i)) free.push(i);
   }
   if (free.length === 0) return null;
 
-  const spawnIndex = free[Math.floor(Math.random() * free.length)];
+  // Убрать точки рядом с клоуном; если других нет — оставить как есть.
+  let pool = free;
+  if (clown && avoidDist) {
+    const farFromClown = free.filter((i) => {
+      const pk = pickupPointFor(Arena.spawnPoints[i].x, Arena.spawnPoints[i].y);
+      return Math.hypot(pk.x - clown.x, pk.y - clown.y) > avoidDist;
+    });
+    if (farFromClown.length) pool = farFromClown;
+  }
+
+  const spawnIndex = pool[Math.floor(Math.random() * pool.length)];
   const pt = Arena.spawnPoints[spawnIndex];
   const typeKey = pickItemType(badProbability);
   const def = ITEMS[typeKey];
